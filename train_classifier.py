@@ -22,7 +22,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sqlalchemy import create_engine
 
 def load_data(database_filepath):
-    # load data from database
+    '''load data from database'''
+    
     engine = create_engine('sqlite:///messages-categories.db')
     df = pd.read_sql_table('all_messages', engine)
     X = df['message']
@@ -34,8 +35,8 @@ def load_data(database_filepath):
 
 
 def tokenize(text):
-    #tokenize function cleans the input by replacing URLs with a placeholder, tokenizes and lemmantizes the sentences, removes punctuation, removes stopwords
-    
+    '''tokenize function cleans the input by replacing URLs with a placeholder, tokenizes and lemmantizes the sentences, removes punctuation, removes stopwords'''
+        
     #define regex for detection URLs
     url_regex = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
        
@@ -67,7 +68,7 @@ def tokenize(text):
     return clean_sentence
 
 def build_model():
-    #Use Grid Search to find optimal parameters for model & pipeline  
+    '''Use Grid Search to find optimal parameters for model & pipeline'''  
         
     pipeline = Pipeline([
         ('vect', CountVectorizer(tokenizer=tokenize)),
@@ -87,12 +88,13 @@ def build_model():
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
+    '''evaluate model performance'''
     evaluation = classification_report(y_test, y_pred)
     return evaluation
 
 
 def save_model(model, model_filepath):
-    # save the model to working directory
+    ''' save the model to working directory'''
     filename = 'optimized_RandomForestClassifier.sav'
     pickle.dump(model, open(filename, 'wb'))
     return
