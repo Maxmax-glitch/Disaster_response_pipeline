@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 
 
 def load_data(messages_filepath, categories_filepath):
+    '''Loading data files from given filepath'''
     # load messages dataset
     messages = pd.read_csv('.../disaster_messages.csv')
         
@@ -17,6 +18,7 @@ def load_data(messages_filepath, categories_filepath):
 
 
 def clean_data(df):
+    '''Clean messages and prepare for NLP / classification task''' 
     # create a dataframe of the 36 individual category columns
     categories = df['categories'].str.split(';', n = None, expand = True)
     
@@ -56,6 +58,7 @@ def clean_data(df):
 
     
 def save_data(df, database_filename):
+    '''Load data to SQLlite database'''
     #Save the clean dataset into an sqlite database
     engine = create_engine('sqlite:///messages-categories.db')
     df.to_sql('all_messages', engine, index=False)
