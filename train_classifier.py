@@ -22,21 +22,27 @@ from sklearn.ensemble import RandomForestClassifier
 from sqlalchemy import create_engine
 
 def load_data(database_filepath):
-    '''load data from database'''
+    ''' load data from database & split into two dataframes X Y '''
     
-    engine = create_engine('sqlite:///messages-categories.db')
-    df = pd.read_sql_table('all_messages', engine)
+    #Load data from SQL database
+    engine = create_engine('sqlite:///'+database_filepath)
+    df = pd.read_sql_table('DisasterResponse.db', engine)
+    
+    #define category_names
+    category_names = ['request', 'offer', 'aid_related', 'medical_help', 'medical_products','search_and_rescue', 'security', 'military', 'child_alone', 'water', 'food', 'shelter', 'clothing', 'money', 'missing_people','refugees', 'death', 'other_aid', 'infrastructure_related',       'transport', 'buildings', 'electricity', 'tools', 'hospitals','shops', 'aid_centers', 'other_infrastructure', 'weather_related', 'floods', 'storm', 'fire', 'earthquake', 'cold', 'other_weather','direct_report']
+    
+    #Load data into two dataframes   
     X = df['message']
-    Y = df[['request', 'offer', 'aid_related', 'medical_help', 'medical_products','search_and_rescue', 'security', 'military', 'child_alone', 'water', 'food', 'shelter', 'clothing', 'money', 'missing_people','refugees', 'death', 'other_aid', 'infrastructure_related',       'transport', 'buildings', 'electricity', 'tools', 'hospitals','shops', 'aid_centers', 'other_infrastructure', 'weather_related', 'floods', 'storm', 'fire', 'earthquake', 'cold', 'other_weather','direct_report']]
+    Y = df[category_names]
 
 #Note: Some messages are included duplicated in the dataframe, but with different categories. To be clarified, if okay or should be removed
 
-    return X,Y
+    return X,Y, category_names
 
 
 def tokenize(text):
     '''tokenize function cleans the input by replacing URLs with a placeholder, tokenizes and lemmantizes the sentences, removes punctuation, removes stopwords'''
-        
+    
     #define regex for detection URLs
     url_regex = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
        
@@ -77,26 +83,41 @@ def build_model():
         ])
         
     parameters = {
-        'clf__n_estimators': [50, 100, 200],
+        #TEST CASE: only 'clf__min_samples_split' parameter is used in three settings.
+        #Additional parameters are available and can be used in grid search, but increase training time significantly.
         'clf__min_samples_split': [2, 3, 4]
-        }
         
-    cv = GridSearchCV(pipeline, param_grid=parameters)
+        #Commented out parameters Examples:
+        #'clf__n_estimators': [50, 100, 200],
+        #'clf__min_samples_split': [2, 3, 4]
+        }
+    
+    model = GridSearchCV(pipeline, param_grid=parameters)
        
-    return cv
+    return model
     
 
-
 def evaluate_model(model, X_test, Y_test, category_names):
-    '''evaluate model performance'''
-    evaluation = classification_report(y_test, y_pred)
+    '''evaluate_model function evaluates model based on common evaluation scores'''
+          
+    #Use trained model to predict on test set
+    Y_pred = model.predict(X_test)
+    #Evaluate model
+    evaluation = classification_report(Y_test, Y_pred, target_names = category_names)
+    
+    print(evaluation)
+        
     return evaluation
 
 
 def save_model(model, model_filepath):
-    ''' save the model to working directory'''
-    filename = 'optimized_RandomForestClassifier.sav'
-    pickle.dump(model, open(filename, 'wb'))
+    ''' save the model to given directory'''
+    #filename = 'optimized_RandomForestClassifier.sav'
+    #pickle.dump(model, model_filepath)
+    
+    with open(model_filepath, 'wb') as f:
+        pickle.dump(model, f)
+        
     return
 
 
@@ -115,7 +136,7 @@ def main():
         
         print('Evaluating model...')
         evaluate_model(model, X_test, Y_test, category_names)
-
+        
         print('Saving model...\n    MODEL: {}'.format(model_filepath))
         save_model(model, model_filepath)
 

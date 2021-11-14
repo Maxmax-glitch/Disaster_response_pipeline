@@ -5,12 +5,11 @@ from sqlalchemy import create_engine
 
 
 def load_data(messages_filepath, categories_filepath):
-    '''Loading data files from given filepath'''
-    # load messages dataset
-    messages = pd.read_csv('.../disaster_messages.csv')
+    '''load messages dataset'''
+    messages = pd.read_csv(messages_filepath)
         
     # load categories dataset
-    categories = pd.read_csv('.../disaster_categories.csv')
+    categories = pd.read_csv(categories_filepath)
     
     # merge datasets
     df = pd.merge(left = messages, right = categories)
@@ -18,8 +17,7 @@ def load_data(messages_filepath, categories_filepath):
 
 
 def clean_data(df):
-    '''Clean messages and prepare for NLP / classification task''' 
-    # create a dataframe of the 36 individual category columns
+    '''create a dataframe of the 36 individual category columns'''
     categories = df['categories'].str.split(';', n = None, expand = True)
     
     # select the first row of the categories dataframe
@@ -37,6 +35,7 @@ def clean_data(df):
     # rename the columns of `categories`
     categories.columns = category_colnames
     
+            
     for column in categories:
         # set each value to be the last character of the string
         categories[column] = categories[column].str.slice(start=-1)
@@ -44,24 +43,23 @@ def clean_data(df):
     
         # convert column from string to numeric
         categories[column] = categories[column].astype('int')
+        
+    # drop the original categories column from `df`
+    df = df.drop(['categories'], axis = 1)
     
-        # drop the original categories column from `df`
-        df = df.drop(['categories'], axis = 1)
+    # concatenate the original dataframe with the new `categories` dataframe
+    df = df.merge(categories, left_index=True, right_index=True)
     
-        # concatenate the original dataframe with the new `categories` dataframe
-        df = df.merge(categories, left_index=True, right_index=True)
-    
-        # drop duplicates
-        df.drop_duplicates(inplace = True)
-    
+    # drop duplicates
+    df.drop_duplicates(inplace = True)
+          
     return df
 
     
 def save_data(df, database_filename):
-    '''Load data to SQLlite database'''
-    #Save the clean dataset into an sqlite database
-    engine = create_engine('sqlite:///messages-categories.db')
-    df.to_sql('all_messages', engine, index=False)
+    '''Save the clean dataset into an sqlite database'''
+    engine = create_engine('sqlite:///'+database_filename)
+    df.to_sql('DisasterResponse.db', engine, index=False)
     
     return
 
